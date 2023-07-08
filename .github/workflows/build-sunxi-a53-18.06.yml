@@ -7,7 +7,7 @@
 # HelmiWrt OS by helmiau.com
 #=================================================
 
-name: Build Armvirt64 21.02
+name: Build Sunxi Cortex A53 18.06
 
 on:
   workflow_dispatch:
@@ -18,7 +18,7 @@ on:
 
 env:
   #Config Files
-  CONFIG_FILE: config/armvirt64.config
+  CONFIG_FILE: config/sunxi-a53.config
   EXTRA_CONFIG_FILE: config/rpi-extra.config
   UNIVERSAL_CONFIG_FILE: config/universal.config
   #Binaries Platform
@@ -28,22 +28,13 @@ env:
   SUBFINDER_BINARY: arm64
   #Workflow Infos
   SOURCE_URL: https://github.com/immortalwrt/immortalwrt
-  SOURCE_BRANCH: 21.02
+  SOURCE_BRANCH: 18.06-k5.4
   DIY_SH: scripts/immortalwrt.sh
   TOOLCHAIN_TAG: toolchain
   TOOLCHAIN_RELEASE_UPLOAD: true
   FIRMWARE_RELEASE_UPLOAD: true
   WEB_ROOT_PATH: /data/www/openwrt.cc
   TZ: Asia/Jakarta
-
-  # Trigger build s9xxx environments
-  REPO_OWNER: helmiau
-  REPO_NAME: HelmiWrt-OS-Immortal
-  BRANCH_NAME: main
-  # other configs
-  FAILPROP: false
-  TRIGGERWF: true
-  WAITWF: false
 
 jobs:
   Toolchain:
@@ -381,8 +372,8 @@ jobs:
             mkdir -p $OPENWRT_ROOT_PATH/files/etc/opkg
             cd $OPENWRT_ROOT_PATH/files/etc/opkg
             cp $GITHUB_WORKSPACE/data/opkg/distfeeds.conf .
-            sed -i "s/DEVICE_SUBTARGET/bcm2710/g" distfeeds.conf
-            sed -i "s/DEVICE_TARGET/bcm27xx/g" distfeeds.conf
+            sed -i "s/DEVICE_SUBTARGET/$DEVICE_SUBTARGET/g" distfeeds.conf
+            sed -i "s/DEVICE_TARGET/$DEVICE_TARGET/g" distfeeds.conf
             sed -i "s/DEVICE_PLATFORM/$DEVICE_PLATFORM/g" distfeeds.conf
             cd $OPENWRT_ROOT_PATH
             git clone https://git.openwrt.org/project/usign.git
@@ -396,7 +387,6 @@ jobs:
             mv key-build.pub $(usign -F -p key-build.pub)
           fi
           cd $OPENWRT_ROOT_PATH
-          echo "dtparam=i2c_arm=on,audio=on" >> target/linux/bcm27xx/image/config.txt
           mkdir -p files/etc/uci-defaults/
           cp $GITHUB_WORKSPACE/scripts/init-settings.sh files/etc/uci-defaults/99-init-settings
           mkdir -p files/www/snapshots
@@ -443,7 +433,7 @@ jobs:
 
       - name: Deploy Files To Release
         uses: ncipollo/release-action@v1.12.0
-        if: steps.release_status.outputs.status == 'success' && !cancelled()
+        if: env.FIRMWARE_RELEASE_UPLOAD == 'true' && steps.release_status.outputs.status == 'success' && !cancelled()
         with:
           prerelease: ${{ env.PRE_RELEASE_STATS }}
           allowUpdates: true
@@ -456,96 +446,3 @@ jobs:
           commit: ${{ env.CURRENT_BRANCH }}
           token: ${{ secrets.HELMIWRT_RW }}
           artifacts: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/${{ env.DEVICE_TARGET }}/${{ env.DEVICE_SUBTARGET }}/*
-
-  Trigger_s9xxx_Build:
-    needs: [Build]
-    runs-on: ubuntu-20.04
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@main
-
-      - name: Initialization Environment
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: |
-          sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
-          sudo -E apt-get -qq update
-          sudo -E apt-get -qq install wget curl
-          sudo -E apt-get -qq autoremove --purge
-          sudo -E apt-get -qq clean
-
-      - name: Load HelmiWrt Mods
-        id: mods
-        run: |
-          mkdir -p workspace
-          cd workspace
-          git config --global credential.helper store
-          git clone https://$GITHUB_REPOSITORY_OWNER:${{ secrets.HELMIWRT_RW }}@github.com/$GITHUB_REPOSITORY_OWNER/HelmiWrt-Plus.git filex
-          export UP_USERNEW=$( grep new_user filex/up_info.txt | sed 's/new_user=//g' )
-          echo "UP_USERNEW=$UP_USERNEW" >> $GITHUB_ENV
-          export UP_NEW=$( grep new_repo filex/up_info.txt | sed 's/new_repo=//g' )
-          echo "UP_NEW=$UP_NEW" >> $GITHUB_ENV
-          rm -rf filex
-
-      - name: Checking Files
-        id: checkfiles
-        run: |
-          [ ! -d $GITHUB_WORKSPACE/kerjain ] && mkdir -p $GITHUB_WORKSPACE/kerjain
-          cd $GITHUB_WORKSPACE/kerjain
-          export KERJA_DIR="$(echo ${PWD})"
-          echo "KERJA_DIR=$KERJA_DIR" >> $GITHUB_ENV
-          export SOURCE_BRANCH=$SOURCE_BRANCH
-          echo "SOURCE_BRANCH=$SOURCE_BRANCH" >> $GITHUB_ENV
-          export BUILD_DATE=$(curl -sL https://api.github.com/repos/helmiau/HelmiWrt-OS-Immortal/releases | jq -r '.[0] | .tag_name' | sed 's/helmiwrt-//g')
-          echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
-          echo -e "$(curl -sL https://api.github.com/repos/$UP_USERNEW/$UP_NEW/releases | grep browser_download_url | sed -e 's/ //g' -e 's|\"||g' -e 's|browser_download_url:||g' | grep helmiwrt-$BUILD_DATE | grep $SOURCE_BRANCH-armvirt-64)" > armvirt64.txt
-          wget -i armvirt64.txt
-          echo -e "=== helmilog: Below is work/kerjain contents.. ==="
-          ls -R
-          rm -f armvirt64.txt
-          echo -e "=== helmilog: Upper is work/kerjain contents.. ==="
-          echo "status=success" >> $GITHUB_OUTPUT
-
-      - name: Checking Release Status
-        id: release_status
-        if: env.FIRMWARE_RELEASE_UPLOAD == 'true' && steps.checkfiles.outputs.status == 'success' && !cancelled()
-        run: |
-          export REL_STATS="$(curl -s https://github.com/$UP_USERNEW/$UP_NEW/releases | grep -c 'Latest')"
-          echo "REL_STATS=$REL_STATS" >> $GITHUB_ENV
-          if [[ $REL_STATS -lt 1 ]]; then
-              echo "PRE_RELEASE_STATS=true" >> $GITHUB_ENV
-              echo "status=success" >> $GITHUB_OUTPUT
-          else
-              echo "PRE_RELEASE_STATS=false" >> $GITHUB_ENV
-              echo "status=success" >> $GITHUB_OUTPUT
-          fi
-          echo "Checking release done!. resuming..."
-
-      - name: Deploy Files To Release
-        uses: ncipollo/release-action@v1.12.0
-        if: steps.release_status.outputs.status == 'success' && !cancelled()
-        with:
-          prerelease: ${{ env.PRE_RELEASE_STATS }}
-          allowUpdates: true
-          replacesArtifacts: true
-          owner: ${{ env.UP_USERNEW }}
-          repo: ${{ env.UP_NEW }}
-          name: HelmiWrt OS ${{ env.BUILD_DATE }}
-          tag: helmiwrt-${{ env.BUILD_DATE }}
-          bodyFile: release_body.txt
-          commit: ${{ env.CURRENT_BRANCH }}
-          token: ${{ secrets.HELMIWRT_RW }}
-          artifacts: ${{ env.KERJA_DIR }}/*
-
-      - name: Running Amlogic s9xxx ${{ env.SOURCE_BRANCH }} build
-        uses: convictional/trigger-workflow-and-wait@v1.5.0
-        with:
-          owner: ${{ env.REPO_OWNER }}
-          repo: ${{ env.REPO_NAME }}
-          github_token: ${{ secrets.HELMIWRT_RW }}
-          workflow_file_name: build-amlogic-s9xxx-${{ env.SOURCE_BRANCH }}.yml
-          ref: ${{ env.BRANCH_NAME }}
-          propagate_failure: ${{ env.FAILPROP }}
-          trigger_workflow: ${{ env.TRIGGERWF }}
-          wait_workflow: ${{ env.WAITWF }}

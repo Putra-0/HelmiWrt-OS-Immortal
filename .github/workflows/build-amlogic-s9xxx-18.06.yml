@@ -6,7 +6,7 @@
 # HelmiWrt OS by helmiau.com
 #=================================================
 
-name: Build Amlogic s9xxx 21.02
+name: Build Amlogic s9xxx 18.06
 
 on:
   workflow_dispatch:
@@ -21,7 +21,7 @@ env:
   PROC_LISTS: s905x3_s905x2_s905x_s905w_s905d_s922x_s912_s905_s905l2_s905l3_s905l3a_s905l3b
   KERNEL_VR: 5.4.238_5.10.176_5.15.105_6.1.22
   KERNEL_REPO: helmiau/amlogic-kernel
-  SOURCE_BRANCH: 21.02
+  SOURCE_BRANCH: 18.06-k5.4
   UPLOAD_RELEASE: true
   TZ: Asia/Jakarta
 
