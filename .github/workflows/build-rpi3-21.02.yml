@@ -197,7 +197,7 @@ jobs:
           replacesArtifacts: true
           tag: ${{ env.TOOLCHAIN_TAG }}
           commit: ${{ env.CURRENT_BRANCH }}
-          token: ${{ secrets.HELMIWRT_RW }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: output/*
 
   Build:
@@ -286,7 +286,7 @@ jobs:
           cd $GITHUB_WORKSPACE
           git init
           git config --global credential.helper store
-          git remote add origin https://$GITHUB_REPOSITORY_OWNER:${{ secrets.HELMIWRT_RW }}@github.com/$GITHUB_REPOSITORY
+          git remote add origin https://$GITHUB_REPOSITORY_OWNER:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
           git fetch
           git checkout -t origin/$CURRENT_BRANCH
 
@@ -327,24 +327,6 @@ jobs:
           $GITHUB_WORKSPACE/scripts/preset-bugscrsubfd.sh $SUBFINDER_BINARY
           $GITHUB_WORKSPACE/scripts/preset-speedtest-cli.sh $SPEEDTEST_CLI_BINARY
           $GITHUB_WORKSPACE/scripts/preset-terminal-tools.sh
-
-      - name: Load HelmiWrt Mods
-        id: mods
-        run: |
-          cd $OPENWRT_ROOT_PATH
-          git config --global credential.helper store
-          git clone https://$GITHUB_REPOSITORY_OWNER:${{ secrets.HELMIWRT_RW }}@github.com/$GITHUB_REPOSITORY_OWNER/HelmiWrt-Plus.git filex
-          cp -r filex/files/* package/base-files/files/
-          export UP_USERNEW=$( grep new_user filex/up_info.txt | sed 's/new_user=//g' )
-          echo "UP_USERNEW=$UP_USERNEW" >> $GITHUB_ENV
-          export UP_NEW=$( grep new_repo filex/up_info.txt | sed 's/new_repo=//g' )
-          echo "UP_NEW=$UP_NEW" >> $GITHUB_ENV
-          rm -rf filex
-          sed -i -e 's/\r$//' $(grep -rli "/bin/bash" "package/base-files/files/bin")
-          chmod +x package/base-files/files/bin/*
-          mv package/base-files/files/root/.oh-my-zsh/themes/ys.zsh-theme files/root/.oh-my-zsh/themes/ys.zsh-theme
-          echo -e "this is immortalwrt base build" > package/base-files/files/bin/is_immortalwrt_based
-          echo -e "this is $SOURCE_BRANCH build" > package/base-files/files/bin/is-$SOURCE_BRANCH-build
 
       - name: Download DL Package
         id: download
@@ -400,7 +382,7 @@ jobs:
       - name: Organize Files
         id: organize_files
         run: |
-          export BUILD_DATE=$(curl -sL https://api.github.com/repos/helmiau/HelmiWrt-OS-Immortal/releases | jq -r '.[0] | .tag_name' | sed 's/helmiwrt-//g')
+          export BUILD_DATE=$(curl -sL https://api.github.com/repos/Putra-0/HelmiWrt-OS-Immortal/releases | jq -r '.[0] | .tag_name' | sed 's/helmiwrt-//g')
           echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
           cd $OPENWRT_ROOT_PATH/bin/targets/$DEVICE_TARGET/$DEVICE_SUBTARGET
           rm -rf packages
@@ -417,33 +399,25 @@ jobs:
           df -hT $PWD
           echo "status=success" >> $GITHUB_OUTPUT
 
-      - name: Checking Release Status
-        id: release_status
-        if: env.FIRMWARE_RELEASE_UPLOAD == 'true' && steps.organize_files.outputs.status == 'success' && !cancelled()
-        run: |
-          export REL_STATS="$(curl -s https://github.com/$UP_USERNEW/$UP_NEW/releases | grep -c 'Latest')"
-          echo "REL_STATS=$REL_STATS" >> $GITHUB_ENV
-          if [[ $REL_STATS -lt 1 ]]; then
-              echo "PRE_RELEASE_STATS=true" >> $GITHUB_ENV
-              echo "status=success" >> $GITHUB_OUTPUT
-          else
-              echo "PRE_RELEASE_STATS=false" >> $GITHUB_ENV
-              echo "status=success" >> $GITHUB_OUTPUT
-          fi
-          echo "Checking release done!. resuming..."
+      - name: Delete Old Firmware Assets
+        if: steps.hash.outputs.REBUILD_TOOLCHAIN == 'true'
+        uses: mknejp/delete-release-assets@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
+          fail-if-no-assets: false
+          fail-if-no-release: false
+          assets: "*"
 
       - name: Deploy Files To Release
         uses: ncipollo/release-action@v1.12.0
         if: env.FIRMWARE_RELEASE_UPLOAD == 'true' && steps.release_status.outputs.status == 'success' && !cancelled()
         with:
-          prerelease: ${{ env.PRE_RELEASE_STATS }}
           allowUpdates: true
           replacesArtifacts: true
-          owner: ${{ env.UP_USERNEW }}
-          repo: ${{ env.UP_NEW }}
           name: HelmiWrt OS ${{ env.BUILD_DATE }}
           tag: helmiwrt-${{ env.BUILD_DATE }}
           bodyFile: release_body.txt
           commit: ${{ env.CURRENT_BRANCH }}
-          token: ${{ secrets.HELMIWRT_RW }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/${{ env.DEVICE_TARGET }}/${{ env.DEVICE_SUBTARGET }}/*
