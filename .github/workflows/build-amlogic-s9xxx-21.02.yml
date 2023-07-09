@@ -82,7 +82,7 @@ jobs:
         # Start Build s9xxx based on $SOURCE_BRANCH source.
         if wget -q --method=HEAD "$HELMIWRT_REL-$BUILD_DATE/$HELMIWRT_FILENAME"; then
             # Using modified make file, then modify output file name
-            [ -f make ] && rm -f make && wget -q https://raw.githubusercontent.com/helmiau/HelmiWrt-OS-Immortal/main/scripts/make-amlogic -O make
+            [ -f make ] && rm -f make && wget -q https://raw.githubusercontent.com/Putra-0/HelmiWrt-OS-Immortal/main/scripts/make-amlogic -O make
             sed -i "/build_image_file=/c\ build_image_file=\"\${out_path}/helmiwrt-$SOURCE_BRANCH-\${board}-k\${kernel}.img\"" make
             grep "build_image_file=" make
             # Download Firmware $SOURCE_BRANCH
@@ -91,7 +91,7 @@ jobs:
             wget -q -P openwrt-armvirt "$HELMIWRT_REL-$BUILD_DATE/$HELMIWRT_FILENAME"
             # Build Firmware $SOURCE_BRANCH
             sudo chmod +x make
-            sudo ./make -b $PROC_LISTS -k $KERNEL_VR -s $ROOTFS_SIZE -r $KERNEL_REPO -a true
+            sudo ./make -b $PROC_LISTS -k $KERNEL_VR -s $ROOTFS_SIZE -r $KERNEL_REPO -a false
             export PACKAGED_OUTPUTPATH="${PWD}/out"
             echo "PACKAGED_OUTPUTPATH=$PACKAGED_OUTPUTPATH" >> $GITHUB_ENV
             find . -type f -name 'helmiwrt-$SOURCE_BRANCH-*' | while read FILE ; do
