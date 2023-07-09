@@ -399,15 +399,20 @@ jobs:
           df -hT $PWD
           echo "status=success" >> $GITHUB_OUTPUT
 
-      - name: Delete Old Firmware Assets
-        if: steps.hash.outputs.REBUILD_TOOLCHAIN == 'true'
-        uses: mknejp/delete-release-assets@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
-          fail-if-no-assets: false
-          fail-if-no-release: false
-          assets: "*"
+      - name: Checking Release Status
+        id: release_status
+        if: env.FIRMWARE_RELEASE_UPLOAD == 'true' && steps.organize_files.outputs.status == 'success' && !cancelled()
+        run: |
+          export REL_STATS="$(curl -s https://github.com/Putra-0/HelmiWrt-OS-Immortal/releases | grep -c 'Latest')"
+          echo "REL_STATS=$REL_STATS" >> $GITHUB_ENV
+          if [[ $REL_STATS -lt 1 ]]; then
+              echo "PRE_RELEASE_STATS=true" >> $GITHUB_ENV
+              echo "status=success" >> $GITHUB_OUTPUT
+          else
+              echo "PRE_RELEASE_STATS=false" >> $GITHUB_ENV
+              echo "status=success" >> $GITHUB_OUTPUT
+          fi
+          echo "Checking release done!. resuming..."
 
       - name: Deploy Files To Release
         uses: ncipollo/release-action@v1.12.0
@@ -415,6 +420,7 @@ jobs:
         with:
           allowUpdates: true
           replacesArtifacts: true
+          prerelease: ${{ env.PRE_RELEASE_STATS }}
           name: HelmiWrt OS ${{ env.BUILD_DATE }}
           tag: helmiwrt-${{ env.BUILD_DATE }}
           bodyFile: release_body.txt
