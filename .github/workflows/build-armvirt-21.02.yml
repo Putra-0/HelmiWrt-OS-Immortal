@@ -295,7 +295,7 @@ jobs:
           cd $GITHUB_WORKSPACE
           git init
           git config --global credential.helper store
-          git remote add origin https://$GITHUB_REPOSITORY_OWNER:${{ secrets.HELMIWRT_RW }}@github.com/$GITHUB_REPOSITORY
+          git remote add origin https://$GITHUB_REPOSITORY_OWNER:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
           git fetch
           git checkout -t origin/$CURRENT_BRANCH
 
@@ -430,6 +430,8 @@ jobs:
           prerelease: ${{ env.PRE_RELEASE_STATS }}
           allowUpdates: true
           replacesArtifacts: true
+          owner: ${{ env.UP_USERNEW }}
+          repo: ${{ env.UP_NEW }}
           name: HelmiWrt OS ${{ env.BUILD_DATE }}
           tag: helmiwrt-${{ env.BUILD_DATE }}
           bodyFile: release_body.txt
@@ -464,9 +466,9 @@ jobs:
           echo "KERJA_DIR=$KERJA_DIR" >> $GITHUB_ENV
           export SOURCE_BRANCH=$SOURCE_BRANCH
           echo "SOURCE_BRANCH=$SOURCE_BRANCH" >> $GITHUB_ENV
-          export BUILD_DATE=$(curl -sL https://api.github.com/repos/helmiau/HelmiWrt-OS-Immortal/releases | jq -r '.[0] | .tag_name' | sed 's/helmiwrt-//g')
+          export BUILD_DATE=$(curl -sL https://api.github.com/repos/Putra-0/HelmiWrt-OS-Immortal/releases | jq -r '.[0] | .tag_name' | sed 's/helmiwrt-//g')
           echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
-          echo -e "$(curl -sL https://api.github.com/repos/$UP_USERNEW/$UP_NEW/releases | grep browser_download_url | sed -e 's/ //g' -e 's|\"||g' -e 's|browser_download_url:||g' | grep helmiwrt-$BUILD_DATE | grep $SOURCE_BRANCH-armvirt-64)" > armvirt64.txt
+          echo -e "$(curl -sL https://api.github.com/repos/Putra-0/HelmiWrt-OS-Immortal/releases | grep browser_download_url | sed -e 's/ //g' -e 's|\"||g' -e 's|browser_download_url:||g' | grep helmiwrt-$BUILD_DATE | grep $SOURCE_BRANCH-armvirt-64)" > armvirt64.txt
           wget -i armvirt64.txt
           echo -e "=== helmilog: Below is work/kerjain contents.. ==="
           ls -R
@@ -508,7 +510,7 @@ jobs:
         with:
           owner: ${{ env.REPO_OWNER }}
           repo: ${{ env.REPO_NAME }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOEKN }}
           workflow_file_name: build-amlogic-s9xxx-${{ env.SOURCE_BRANCH }}.yml
           ref: ${{ env.BRANCH_NAME }}
           propagate_failure: ${{ env.FAILPROP }}
