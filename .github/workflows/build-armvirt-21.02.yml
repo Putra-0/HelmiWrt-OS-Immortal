@@ -510,7 +510,7 @@ jobs:
         with:
           owner: ${{ env.REPO_OWNER }}
           repo: ${{ env.REPO_NAME }}
-          github_token: ${{ secrets.GITHUB_TOEKN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow_file_name: build-amlogic-s9xxx-${{ env.SOURCE_BRANCH }}.yml
           ref: ${{ env.BRANCH_NAME }}
           propagate_failure: ${{ env.FAILPROP }}
