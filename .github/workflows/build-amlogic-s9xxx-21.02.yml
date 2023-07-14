@@ -83,8 +83,8 @@ jobs:
         if wget -q --method=HEAD "$HELMIWRT_REL-$BUILD_DATE/$HELMIWRT_FILENAME"; then
             # Using modified make file, then modify output file name
             [ -f make ] && rm -f make && wget -q https://raw.githubusercontent.com/Putra-0/HelmiWrt-OS-Immortal/main/scripts/make-amlogic -O make
-            sed -i "/build_image_file=/c\ build_image_file=\"\${out_path}/helmiwrt-$SOURCE_BRANCH-\${board}-k\${kernel}.img\"" make
-            grep "build_image_file=" make
+            sed -i "/openwrt_filename=/c\ openwrt_filename=\"\helmiwrt-$SOURCE_BRANCH-\${board}-k\${kernel}.img\"" make
+            grep "openwrt_filename=" make
             # Download Firmware $SOURCE_BRANCH
             echo "$HELMIWRT_FILENAME rootfs found under $BUILD_DATE tag! Start downloading..."
             [ -d openwrt-armvirt ] || mkdir -p openwrt-armvirt
