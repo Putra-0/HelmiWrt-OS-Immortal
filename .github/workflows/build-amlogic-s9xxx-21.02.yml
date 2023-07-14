@@ -52,7 +52,7 @@ jobs:
         sudo timedatectl set-timezone "${TZ}"
         export BUILD_DATE=$(curl -sL https://api.github.com/repos/Putra-0/HelmiWrt-OS-Immortal/releases | jq -r '.[0] | .tag_name' | sed 's/helmiwrt-//g')
         echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
-        export HELMIWRT_REL="https://github.com/Putra-0/HelmiWrt-OS-Immortal/releases/download/helmiwrt"
+        export HELMIWRT_REL="https://github.com/Putra-0/HelmiWrt-OS-Immortal/releases/"
         echo "HELMIWRT_REL=$HELMIWRT_REL" >> $GITHUB_ENV
         export SOURCE_BRANCH=$SOURCE_BRANCH
         echo "SOURCE_BRANCH=$SOURCE_BRANCH" >> $GITHUB_ENV
