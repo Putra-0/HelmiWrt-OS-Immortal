@@ -122,6 +122,8 @@ jobs:
         prerelease: ${{ env.PRE_RELEASE_STATS }}
         allowUpdates: true
         replacesArtifacts: true
+        owner: Putra-0
+        repo: HelmiWrt-OS-Immortal
         name: HelmiWrt OS ${{ env.BUILD_DATE }}
         token: ${{ secrets.GITHUB_TOKEN }}
         tag: helmiwrt-${{ env.BUILD_DATE }}
