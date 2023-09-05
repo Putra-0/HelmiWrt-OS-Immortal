@@ -28,7 +28,7 @@ env:
   SUBFINDER_BINARY: arm64
   #Workflow Infos
   SOURCE_URL: https://github.com/immortalwrt/immortalwrt
-  SOURCE_BRANCH: 21.02
+  SOURCE_BRANCH: 23.05
   DIY_SH: scripts/immortalwrt.sh
   TOOLCHAIN_TAG: toolchain
   TOOLCHAIN_RELEASE_UPLOAD: true
